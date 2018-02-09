@@ -2,6 +2,7 @@
 # Y.-W. FANG, created Feb. 8, 2018
 # in 3 functions: generate_vasp_params(), generate_qe_params() and generate_lammps_params().
 # generate_inputs() function at the end of the file decides which function to use according to the plugin
+# version 0.0.1 Feb. 9, 2018
 
 #Import the modules needed to run this script
 import os
@@ -163,8 +164,26 @@ def read_vasp(filename='POSCAR'):
         atomic_coordinates *= scale
     else:
         pass
-    print(atomic_coordinates)
+#    print(atomic_coordinates)
     #POSCAR finished reading.
+
+    atomic_coordinates = atomic_coordinates.tolist()
+    atomic_coordinates = tuple(map(tuple, atomic_coordinates))
+    print(atomic_coordinates)
+    print(type(atomic_coordinates))
+#    for ii in atomic_coordinates:
+#        for jj in ii:
+#            jj.tolist()
+#    print(list(atomic_coordinates))
+
+
+    #match the definitions
+    cell = lattice_vector
+    posinfo={'cell': cell, 'symbol': atom_symbols, 'scaled_positions': atomic_coordinates,
+             'tot_num': total_num_of_atoms}
+    return posinfo
+
+
 
 
 
@@ -187,17 +206,31 @@ with open(title,'wt') as f:
     f.write("import numpy as np\n")
     f.write("# Define structure\n")
 #    POSCAR = open('POSCAR', 'rt', encoding='utf-8')
-    read_vasp()
+    posinfo = read_vasp()
+    print(posinfo,'\n')
+#    f.write(posinfo['cell']), f.write can only print strings
+    print('cell=[', list(posinfo['cell'][0]), ',', list(posinfo['cell'][1]),
+          ',', list(posinfo['cell'][2]), ']', file=f)
+    print('symbols = ', posinfo['symbol'], file = f)
+    print('scaled_positions = [', file = f)
+#    posinfo['scaled_positions'] = posinfo['scaled_positions'].split(',')
+#    posinfo['scaled_positions'] = tuple(posinfo['scaled_positions'])
+#    print(posinfo['scaled_positions'])
+    count=0
+    for iii in posinfo['scaled_positions']:
+        count = count+1
+        if count < posinfo['tot_num']:
+            print(iii,',', file=f)
+        else:
+            print(iii,']', file=f)
 
-#    with open('POSCAR', 'rt', encoding='utf-8') as f1:
-#        line_number=0
-#        for line in f1:
-#            line_number=line_number+1
-#            if line_number==2:
-#                scale = float(line)
-#                print(scale,type(scale))
-#            if line_number==3:
-#                lattice_vector_1=line.split()
-#                lattice_vector_1=list(map(float, lattice_vector_1))
-#                lattice_vector_1=np.array(lattice_vector_1)
-#                print(lattice_vector_1[:],type(lattice_vector_1))
+    with open('sample.py') as f2:
+        for linef2 in f2:
+            f.write(linef2)
+
+
+
+
+
+
+
