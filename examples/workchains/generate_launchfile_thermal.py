@@ -157,6 +157,15 @@ def read_vasp(filename='POSCAR'):
             selective_flags[atom] = flag_list
     print(selective_flags)
 
+    if isinstance(filename, basestring):
+        f.close()
+    if cartesian:
+        atomic_coordinates *= scale
+    else:
+        pass
+    print(atomic_coordinates)
+    #POSCAR finished reading.
+
 
 
 with open(title,'wt') as f:
