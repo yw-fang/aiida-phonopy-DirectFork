@@ -3,6 +3,7 @@
 # generate_inputs() function at the end of the file decides which function to use according to the plugin
 
 from aiida.orm import Code, CalculationFactory, DataFactory
+from aiida.common.exceptions import InputValidationError
 
 KpointsData = DataFactory("array.kpoints")
 ParameterData = DataFactory('parameter')
@@ -176,21 +177,36 @@ def get_pseudos_vasp(structure, family_name, folder_path=None):
     PawData = DataFactory('vasp.paw')
 
     unique_symbols = np.unique([site.kind_name for site in structure.sites]).tolist()
+    pseudo_names = list(unique_symbols)
+
+    # Temporal fix for multi pseudpotentials elements
+    import os
+    element_list = os.listdir(folder_path)
+    for i, element in enumerate(unique_symbols):
+        if not element in element_list:
+            for e in element_list:
+                if e.split('_')[0] == element:
+                    pseudo_names[i] = e
+                    break
 
     paw_cls = PawData()
     if folder_path is not None:
         paw_cls.import_family(folder_path,
                               familyname=family_name,
-                              family_desc='This is a test family',
+                              family_desc='temporal family',
                               # store=True,
                               stop_if_existing=False
                               )
 
     pseudos = {}
-    for symbol in unique_symbols:
-        pseudos[symbol] = paw_cls.load_paw(family=family_name,
-                                           symbol=symbol)[0]
+    # print ('PAW symbols: {}'.format(unique_symbols))
+    # print ('folder path: {}'.format(folder_path))
 
+    for name, symbol in zip(pseudo_names, unique_symbols):
+        pseudos[symbol] = paw_cls.load_paw(family=family_name,
+                                           symbol=name)[0]
+
+    # print ('pseudos', pseudos)
     return pseudos
 
 
@@ -222,7 +238,10 @@ def generate_vasp_params(structure, settings, type=None, pressure=0.0):
     # machine
     inputs._options.resources = settings.dict.machine['resources']
     inputs._options.max_wallclock_seconds = settings.dict.machine['max_wallclock_seconds']
-
+    # inputs._options._parser_name = 'vasp.pymatgen'
+    # Use for all the set functions in calculation.
+    # inputs._options = dict(inputs._options)
+    # inputs._options['_parser_name'] = 'vasp.pymatgen'
 
     # INCAR (parameters)
     incar = dict(settings.dict.parameters)
@@ -306,20 +325,22 @@ def generate_vasp_params(structure, settings, type=None, pressure=0.0):
         kpoints.set_kpoints_mesh(settings.dict.kpoints_mesh,
                                  offset=kpoints_offset)
     else:
-        print ('no kpoint definition in input')
-        exit()
+        raise InputValidationError('no kpoint definition in input. Define either kpoints_density or kpoints_mesh')
 
     inputs.kpoints = kpoints
 
     return VaspCalculation.process(), inputs
 
 
-def generate_inputs(structure, es_settings, type=None, pressure=0.0, machine=None):
+def generate_inputs(structure, es_settings, type=None, pressure=0.0):
 
     try:
         plugin = Code.get_from_string(es_settings.dict.code[type]).get_attr('input_plugin')
     except:
-        plugin = Code.get_from_string(es_settings.dict.code).get_attr('input_plugin')
+        try:
+            plugin = Code.get_from_string(es_settings.dict.code).get_attr('input_plugin')
+        except InputValidationError:
+            raise InputValidationError('No code provided for {} calculation type'.format(type))
 
     if plugin in ['vasp.vasp']:
         return generate_vasp_params(structure, es_settings, type=type, pressure=pressure)

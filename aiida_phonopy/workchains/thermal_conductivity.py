@@ -73,7 +73,7 @@ class ThermalPhono3py(WorkChain):
             self.ctx.iteration = 1
             self.ctx.input_data_sets = self.ctx.harmonic.out.force_sets
             self.ctx.final_structure = self.ctx.harmonic.out.final_structure
-            # Add all harmonic data tooutputs
+            # Add all harmonic data outputs
             self.out('final_structure', self.ctx.final_structure)
             self.out('thermal_properties', self.ctx.harmonic.out.thermal_properties)
             self.out('dos', self.ctx.harmonic.out.dos)
@@ -132,7 +132,7 @@ class ThermalPhono3py(WorkChain):
                   'force_sets': self.ctx.anharmonic.out.force_sets}
 
         if bool(self.inputs.use_nac):
-            inputs.update({'nac' : self.ctx.harmonic.out.nac_data})
+            inputs.update({'nac_data': self.ctx.harmonic.out.nac_data})
 
         if int(self.inputs.gp_chunks) > 1:
             inputs.update({'gp_chunks' : self.inputs.gp_chunks})
