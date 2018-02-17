@@ -1,3 +1,8 @@
+## This is a personal fork of Abel's AiiDA Phonopy plugin
+Comared to Abel's repository, I added some optimized features and tools for VASP.
+
+
+## Below is Abel's readme
 
 AiiDA Phonopy plugin
 ====================
